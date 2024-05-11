@@ -607,7 +607,7 @@ class Index {
         py::object input,
         size_t k = 1,
         int num_threads = -1,
-        const std::function<bool(hnswlib::labeltype)>& filter = nullptr) {
+        const std::function<bool(hnswlib::labeltype)>& filter = nullptr, size_t ef = 0) {
         py::array_t < dist_t, py::array::c_style | py::array::forcecast > items(input);
         auto buffer = items.request();
         hnswlib::labeltype* data_numpy_l;
@@ -636,7 +636,7 @@ class Index {
             if (normalize == false) {
                 ParallelFor(0, rows, num_threads, [&](size_t row, size_t threadId) {
                     std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result = appr_alg->searchKnn(
-                        (void*)items.data(row), k, p_idFilter);
+                        (void*)items.data(row), k, p_idFilter, ef);
                     if (result.size() != k)
                         throw std::runtime_error(
                             "Cannot return the results in a contigious 2D array. Probably ef or M is too small");
@@ -656,7 +656,7 @@ class Index {
                     normalize_vector((float*)items.data(row), (norm_array.data() + start_idx));
 
                     std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result = appr_alg->searchKnn(
-                        (void*)(norm_array.data() + start_idx), k, p_idFilter);
+                        (void*)(norm_array.data() + start_idx), k, p_idFilter, ef);
                     if (result.size() != k)
                         throw std::runtime_error(
                             "Cannot return the results in a contigious 2D array. Probably ef or M is too small");
@@ -901,7 +901,8 @@ PYBIND11_PLUGIN(hnswlib) {
             py::arg("data"),
             py::arg("k") = 1,
             py::arg("num_threads") = -1,
-            py::arg("filter") = py::none())
+            py::arg("filter") = py::none(),
+            py::arg("ef") = 0)
         .def("add_items",
             &Index<float>::addItems,
             py::arg("data"),
