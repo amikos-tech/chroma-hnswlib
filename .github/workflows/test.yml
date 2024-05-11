@@ -29,7 +29,15 @@ jobs:
       - name: Test
         timeout-minutes: 15
         run: |
-          python -m unittest discover -v --start-directory examples/python --pattern "example*.py"; exit 0 # temporarily ignoring this on py312
+          output=$(python -m unittest discover -v --start-directory examples/python --pattern "example*.py" 2>&1)
+          echo "$output"
+          if [[ "$output" == *"NO TESTS RAN"* ]]; then
+          # Exit with status 0 if no tests ran
+          exit 0
+          else
+          # Otherwise, exit with the original exit status of the unittest command
+          exit $?
+          fi
           python -m unittest discover -v --start-directory tests/python --pattern "bindings_test*.py"
   
   test_cpp:
